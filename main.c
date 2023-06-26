@@ -12,10 +12,6 @@ void repl(void);
 void read_file(const char *file_path);
 
 int main(int argc, char **argv) {
-  LSMat *m = mat_init(10, 10, 1.0);
-
-  mat_print(m);
-
   switch (argc) {
   case 1:
     repl();
@@ -33,9 +29,9 @@ int main(int argc, char **argv) {
 void repl(void) {
   library_init();
 
-  char line[1024];
-
   while (true) {
+    char line[1024] = {0};
+
     printf(">>> ");
 
     if (!fgets(line, sizeof(line), stdin)) {

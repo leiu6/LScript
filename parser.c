@@ -1,6 +1,8 @@
 #include "parser.h"
 
 #include "error.h"
+#include "mat.h"
+#include "dqueue.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -15,6 +17,7 @@ static LexerToken next;
 /* Static Forward */
 /* Allocate */
 static ParserNode *alloc_literal(double literal_val);
+static ParserNode *alloc_matrix(LSMat *m);
 static ParserNode *alloc_prefix(LexerTokenType operator, ParserNode * next);
 static ParserNode *alloc_infix(LexerTokenType operator, ParserNode * rhs,
                                ParserNode *lhs);
@@ -43,6 +46,13 @@ ParserNode *alloc_literal(double literal_val) {
   ParserNode *n = malloc(sizeof(ParserNode));
   n->type = LITERAL_EXPRESSION;
   n->value.literal = lsobj_alloc_number(literal_val);
+  return n;
+}
+
+ParserNode *alloc_matrix(LSMat *m) {
+  ParserNode *n = malloc(sizeof(ParserNode));
+  n->type = LITERAL_EXPRESSION;
+  n->value.literal = lsobj_alloc_matrix(m);
   return n;
 }
 
@@ -81,6 +91,7 @@ void free_from_node(ParserNode *start) {
 
   switch (start->type) {
   case LITERAL_EXPRESSION:
+    lsobj_free(start->value.literal);
     free(start);
     break;
   case PREFIX_EXPRESSION:
@@ -140,6 +151,83 @@ ParserNode *parse_function_call(void) {
   }
 }
 
+ParserNode *parse_matrix_literal(void) {
+  size_t rows = 0;
+  size_t cols = 0;
+  LSDQueue *queue = lsdq_alloc();
+  bool first_row = true;
+
+  if (next.type != OPEN_BRACKET) {
+    error_s(SYNTAX_ERROR, "expected [ at beginning of matrix literal");
+    return NULL;
+  }
+
+  for (;;) {
+    next = lexer_next();
+    if (next.type != OPEN_BRACKET) {
+      error_s(SYNTAX_ERROR, "expected [ at beginning of matrix row");
+      return NULL;
+    }
+
+    size_t check_cols = 0;
+    for (;;) {
+      next = lexer_next();
+      ParserNode *entry = parse_primary();
+      if (entry->type != LITERAL_EXPRESSION) {
+        error_s(SYNTAX_ERROR, "matrix must be constructed with constants");
+        return NULL;
+      }
+
+      lsdq_enqueue(queue, entry->value.literal->value.number);
+
+      if (first_row)
+        cols++;
+      else {
+        check_cols++;
+
+        if (check_cols > cols) {
+          error_s(SYNTAX_ERROR, "matrix rows must have the same number of columns");
+          return NULL;
+        }
+      }
+
+      if (next.type == COMMA) {
+        continue;
+      } else if (next.type == CLOSE_BRACKET) {
+        break;
+      } else {
+        error_s(SYNTAX_ERROR, "expected , or ] after matrix entry");
+        return NULL;
+      }
+    }
+    rows++;
+    if (first_row)
+      first_row = false;
+
+    next = lexer_next();
+    if (next.type == COMMA) {
+      continue;
+    } else if (next.type == CLOSE_BRACKET) {
+      break;
+    } else {
+      error_s(SYNTAX_ERROR, "expected , or ] after matrix row");
+    }
+  }
+
+  LSMat *m = mat_alloc(rows, cols);
+
+  for (size_t row = 0; row < rows; row++) {
+    for (size_t col = 0; col < cols; col++) {
+      double value;
+      lsdq_dequeue(queue, &value);
+      mat_set(m, row, col, value);
+    }
+  }
+  lsdq_free(queue);
+
+  return alloc_matrix(m);
+}
+
 ParserNode *parse_primary(void) {
   if (next.type == NUMBER) {
     double value = next.literal.number;
@@ -158,6 +246,9 @@ ParserNode *parse_primary(void) {
   } else if (next.type == IDENTIFIER) {
     // Parse a function call
     return parse_function_call();
+  } else if (next.type == OPEN_BRACKET) {
+    // Parse a matrix
+    return parse_matrix_literal();
   } else {
     error(SYNTAX_ERROR, "Unable to parse primary statement", NULL, 0, 0);
   }
@@ -267,11 +358,20 @@ void rprint(int padding, int add, const ParserNode *n) {
   pad[padding] = '\0';
 
   if (n->type == LITERAL_EXPRESSION) {
-    PAD;
-    printf("Literal Expression:\n");
+    if (n->value.literal->type == LSOBJ_MATRIX) {
+      PAD;
+      printf("Literal Matrix:\n");
 
-    PAD;
-    printf("Value: %f\n", n->value.literal->value.number);
+      PAD;
+      lsobj_print(n->value.literal);
+    }
+    else {
+      PAD;
+      printf("Literal Expression:\n");
+
+      PAD;
+      printf("Value: %f\n", n->value.literal->value.number);
+    }
   } else if (n->type == PREFIX_EXPRESSION) {
     PAD;
     printf("Prefix Expression:\n");
