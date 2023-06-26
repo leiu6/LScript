@@ -3,6 +3,7 @@
 
 #include "defs.h"
 #include "lexer.h"
+#include "ls-obj.h"
 
 typedef enum {
   LITERAL_EXPRESSION,
@@ -16,7 +17,7 @@ typedef struct ParserNode {
   ParserNodeType type;
 
   union {
-    double literal;
+    LSObj *literal;
 
     struct {
       LexerTokenType operator;

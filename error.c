@@ -18,6 +18,10 @@ void error(ErrorType type, const char *msg, const char *code_snippet, int line,
   }
 }
 
+void error_s(ErrorType type, const char *msg) {
+  error(type, msg, NULL, 0, 0);
+}
+
 void error_fatal(ErrorType type, const char *msg, const char *code_snippet,
                  int line, int col, int errno) {
   error(type, msg, code_snippet, line, col);

@@ -3,6 +3,7 @@
 #include "parser.h"
 #include "runtime.h"
 #include "library.h"
+#include "mat.h"
 
 #include <stdio.h>
 
@@ -11,6 +12,10 @@ void repl(void);
 void read_file(const char *file_path);
 
 int main(int argc, char **argv) {
+  LSMat *m = mat_init(10, 10, 1.0);
+
+  mat_print(m);
+
   switch (argc) {
   case 1:
     repl();

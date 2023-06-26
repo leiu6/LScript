@@ -42,7 +42,7 @@ static void rprint(int padding, int add, const ParserNode *n);
 ParserNode *alloc_literal(double literal_val) {
   ParserNode *n = malloc(sizeof(ParserNode));
   n->type = LITERAL_EXPRESSION;
-  n->value.literal = literal_val;
+  n->value.literal = lsobj_alloc_number(literal_val);
   return n;
 }
 
@@ -271,7 +271,7 @@ void rprint(int padding, int add, const ParserNode *n) {
     printf("Literal Expression:\n");
 
     PAD;
-    printf("Value: %f\n", n->value.literal);
+    printf("Value: %f\n", n->value.literal->value.number);
   } else if (n->type == PREFIX_EXPRESSION) {
     PAD;
     printf("Prefix Expression:\n");

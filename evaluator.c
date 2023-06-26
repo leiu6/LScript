@@ -25,7 +25,7 @@ double evaluate_recursive(ParserNode *n) {
 
   switch (n->type) {
   case LITERAL_EXPRESSION:
-    return n->value.literal;
+    return n->value.literal->value.number;
   case PREFIX_EXPRESSION:
     return evaluate_prefix(n);
   case INFIX_EXPRESSION:
@@ -81,7 +81,7 @@ double evaluate_function_call(ParserNode *n) {
 
   double args[FUNCTION_MAX_NUM_ARGS] = {0};
   for (int i = 0; i < n->value.function_call.num_args; i++) {
-    args[i] = n->value.function_call.args[i]->value.literal;
+    args[i] = n->value.function_call.args[i]->value.literal->value.number;
   }
 
   double result = runtime_run_function(fn, n->value.function_call.num_args, args);

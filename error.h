@@ -3,7 +3,10 @@
 
 #include <stdbool.h>
 
-#define ERROR_TYPES E(SYNTAX_ERROR), E(RUNTIME_ERROR)
+#define ERROR_TYPES                 \
+  E(SYNTAX_ERROR),                  \
+  E(RUNTIME_ERROR),                 \
+  E(OUT_OF_MEMORY_ERROR)
 
 typedef enum {
 #define E(e) e
@@ -13,6 +16,8 @@ typedef enum {
 
 void error(ErrorType type, const char *msg, const char *code_snippet, int line,
            int col);
+
+void error_s(ErrorType type, const char *msg);
 
 void error_fatal(ErrorType type, const char *msg, const char *code_snippet,
                  int line, int col, int errno);
